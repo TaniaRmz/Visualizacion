@@ -65,9 +65,7 @@ void Scene::init(){
     ShaderProgram* m_shaderProgram = new ShaderProgram("shaders/vertex_shader.glsl","shaders/frag_shader.glsl");
     ShaderProgram* m_shaderProgram2 = new ShaderProgram("shaders/mirror_vertex.glsl","shaders/mirror_frag.glsl");
 
-
     m_shaderPrograms.push_back(m_shaderProgram);
-
 
     Model* ball = new CustomModel(m_shaderProgram, "assets/obj/ball.obj", "assets/textures/ball.jpg");
     Model* chair = new CustomModel(m_shaderProgram, "assets/obj/chair.obj", "assets/textures/Chair.jpg");
@@ -75,15 +73,11 @@ void Scene::init(){
     Model* mirror = new CustomModel(m_shaderProgram, "assets/obj/mirror.obj", "assets/textures/Mirror.jpg");
     Model* plane = new CustomModel(m_shaderProgram2, "assets/obj/plane.obj");
 
-
     m_models.push_back(ball);
     m_models.push_back(chair);
     m_models.push_back(mesa);
     m_models.push_back(mirror);
     m_models.push_back(plane);
-
-
-
 
     //Matriz de vista View Matrix
     //Posicion de la camara, centro de atencion, vector perpendicular de la Cámara
@@ -133,15 +127,24 @@ void Scene::render()  {
         glm::mat4 mirrorView = glm::lookAt(refPos, refTarget, refUp);
 
         glFrontFace(GL_CCW);
-        //TODO -> El renderizado de los modelos a la textura
+        // Dibuja primero en la textura de 1280 x 720, usando la cámara reflejada.
+        glBindFramebuffer(GL_FRAMEBUFFER, m_frameBuffer);
+        glViewport(0, 0, 1280, 720);
+        glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+        ball->renderModel(mirrorView, m_projection, true);
+        chair->renderModel(mirrorView, m_projection, true);
+        mesa->renderModel(mirrorView, m_projection, true);
+        // Omite el espejo y su plano para que la madera no tape la cámara reflejada.
 
-        //TODO -> Definir el buffer por defecto, es decir la ventana
-        // Cuidado con el tamaño que se define en el buffer
-
+        // Regresa a la ventana y recupera su tamaño real en píxeles.
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        int width, height;
+        glfwGetFramebufferSize(m_window->getWindow(), &width, &height);
+        glViewport(0, 0, width, height);
 
         glFrontFace(GL_CCW);
-
 
         glClearColor(1.0f, 1.0f, 1.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -151,11 +154,11 @@ void Scene::render()  {
         mesa->renderModel(m_view, m_projection,true);
         mirror->renderModel(m_view, m_projection,true);
 
-        //TODO DEFINIR LA TEXTURA A USAR
+        // Usa en el plano la imagen dibujada desde la cámara reflejada.
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 
         plane->renderModel(m_view, m_projection,false);
-
-
 
 
 
